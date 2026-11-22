@@ -1,4 +1,4 @@
-# Inzendingen samenvoegen tot PDF / Merge student submissions into one PDF
+# Merge Student's submissions from Smart School (smartschool.be) upload zone into one large PDF document
 
 > ## ⚠️ This is a vibe-coded project
 > This program was written entirely by an AI assistant (Claude) in a single chat session, directed by a non-programmer's requirements and **not reviewed line by line by a human**. The complete conversation is included in the [appendix](#appendix-the-complete-chat-session).
