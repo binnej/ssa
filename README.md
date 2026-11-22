@@ -1,32 +1,38 @@
-# Inzendingen samenvoegen tot PDF
+# Inzendingen samenvoegen tot PDF / Merge student submissions into one PDF
 
 > ## ⚠️ This is a vibe-coded project
 > This program was written entirely by an AI assistant (Claude) in a single chat session, directed by a non-programmer's requirements and **not reviewed line by line by a human**. The complete conversation is included in the [appendix](#appendix-the-complete-chat-session).
 >
-> **What was tested:** zip scanning, class/no-class detection, latest-file selection, header stamping, recto-verso padding, blank header pages and bookmarks, using synthetic zips in PDF mode on Linux.
-> **What was *not* tested:** the Microsoft Word conversion (needs Windows + Word), the Tkinter window, and the PyInstaller `.exe` build.
+> **What was tested (by the AI, on Linux, with synthetic zips and a fake converter):** zip scanning, class/no-class detection, file selection, header stamping (border, page numbers, custom field, chopping), recto-verso padding, blank header pages, bookmarks, the Dutch/English texts.
+> **What the AI could not test:** the real Microsoft Word conversion, the Tkinter window and the PyInstaller `.exe` build. The author reports that a first real run produced good output ("output looks good"), but the later changes (borders, page numbers, custom field, language, all-submissions mode, headerless mode, start-up message) have **not** been run in the real window by the AI.
 > **Please try it on a small real zip before relying on it.** Student work is involved, so check the output page by page the first time. Use at your own risk.
 
-Merge a zip of student submissions into **one PDF**, with a small header on each submission (student name, class, number of files submitted). Everything runs locally; nothing is uploaded anywhere (GDPR-friendly).
+Merge a zip of student submissions into **one PDF**, with a small header on each submission (student name, class, number of files submitted, page number, optional custom field). Everything runs locally; nothing is uploaded anywhere (GDPR-friendly).
 
-The UI and header texts are in **Dutch** (Flemish school context). Strings are at the top of the Python file if you want to translate them.
+The window and header texts are available in **Dutch and English**. The language is detected from Windows (Dutch if the Windows display language or region is Dutch, otherwise English) and can be switched in the window. Translations live in the `STR` dictionary at the top of the Python file.
 
 ## Features
 
 - Reads a zip in one of two layouts (auto-detected, can be overridden in the window):
   1. `Class/Student/files…` (class shown in the header and bookmarks)
   2. `Student/files…` (no class)
-- Takes the **most recent file** per student, by the timestamp stored in the zip.
+- Takes the **most recent file** per student, by the timestamp stored in the zip, or **all submissions** of each student (option), oldest first, one after the other.
 - **Word mode:** `.doc`, `.docx`, `.docm`, `.odt`, `.rtf` are converted to PDF by your locally installed **Microsoft Word**, so the layout is what Word shows.
 - **PDF mode:** student PDFs are used as they are (no Word needed).
-- **Header** (9 pt, one line at the top edge of the page, drawn over the document with a small white box; the page is not shrunk):
-  - `Naam: …  |  Klas: …  |  Aantal inzendingen: N`
-  - If N > 1, the count and **Meerdere documenten ingediend** are printed in bold.
-  - Option to put it on every page (default) or only the first page of each submission.
-- **Recto-verso option:** every submission starts on an odd page; a white page is inserted when needed.
-- **Empty folder option:** a page with only the header (count 0) for students with an empty folder. Students with unusable files (corrupt, password-protected, wrong type) always get a header page with a bold note.
-- **PDF bookmarks** per class and per student, in zip order.
-- Log with warnings (empty folders, multiple files, failures). Moodle name suffixes (`_123456_assignsubmission_file_`) are removed from student names.
+- **Header** (9 pt, one line at the top edge of the page, drawn over the document with a white box around the text; the page is not shrunk):
+  - `Name: …  |  Class: …  |  Submissions: N`
+  - If N > 1, the count and **Meerdere documenten ingediend** / **Multiple documents submitted** are printed in bold.
+  - In "all submissions" mode the header also shows `File 2/3`.
+  - A **border** is drawn around the header on the first page of each submission (easy to see where a new submission starts).
+  - **Page number** `1 / 4`: per submission (default), in the whole PDF, or none.
+  - **Extra field**: any text you type (for example `Score: ____ / 20`) is added at the end of the header; if it does not fit it is chopped off.
+  - Header on every page (default) or only on the first page of each submission.
+  - Or **no header at all** (option).
+- **Recto-verso option:** every submission (every file, in "all submissions" mode) starts on an odd page; a white page is inserted when needed.
+- **Empty folder option:** a page with only the header (count 0) for students with an empty folder. Students whose files are unusable (corrupt, password-protected, wrong type) always get a header page with a bold note.
+- **PDF bookmarks** per class and per student (and per file in "all submissions" mode), in zip order.
+- A message and a moving progress bar while Word starts up (the first document can take up to a minute).
+- Log with warnings (empty folders, multiple files, ignored files, failures). Moodle name suffixes (`_123456_assignsubmission_file_`) are removed from student names.
 - Temporary files are deleted after each student.
 
 ## Requirements
@@ -40,7 +46,7 @@ The UI and header texts are in **Dutch** (Flemish school context). Strings are a
 
 ### For teachers (with the `.exe`)
 1. Double-click `InzendingenSamenvoegen.exe`.
-2. Choose the zip, choose Word or PDF mode, tick the options, click **PDF maken**.
+2. Choose the zip, choose Word or PDF mode, set the options, click **PDF maken / Create PDF**.
 3. Choose where to save the PDF.
 
 Windows SmartScreen may show "unknown publisher" on first run (the exe is unsigned): choose *More info → Run anyway*, or have IT approve it.
@@ -57,6 +63,20 @@ pip install pypdf reportlab pywin32
 python inzendingen_samenvoegen.py
 ```
 
+## Options in the window
+
+| Option | Effect |
+|---|---|
+| Type of submissions | Word (doc, docx, odt) via Microsoft Word, or PDF |
+| Folder structure | Detect automatically / with classes / without classes |
+| Duplex | Every submission starts on an odd page |
+| Empty page for empty folders | Header-only page for students with an empty folder |
+| Include all submissions | All suitable files of a student, oldest first (otherwise only the newest) |
+| No header at all | No header, border, page number or extra field. Empty-folder pages are then plain blank pages (bookmarks still identify them) |
+| Header on every page | Otherwise only on the first page of each submission |
+| Page number in header | Per submission (`1 / 4`), in the whole PDF (blank padding pages count), or none |
+| Extra field in header | Free text at the end of the header, chopped off when too long |
+
 ## Files
 
 | File | Purpose |
@@ -68,21 +88,22 @@ python inzendingen_samenvoegen.py
 ## How it works
 
 1. `scan_zip` finds the student folders: the most common depth of folders that directly contain files (or are empty leaf folders). Depth 1 = no classes, depth ≥ 2 = classes.
-2. For each student, the newest file with a suitable extension is extracted to a temp folder.
+2. For each student, the newest (or all) files with a suitable extension are extracted to a temp folder.
 3. Word mode: Word is started invisibly (own instance, macros disabled, read-only open, dummy password so protected files fail instead of prompting) and exports the file to PDF.
-4. `pypdf` merges the pages; `reportlab` draws the header overlay, which is merged onto the page top. Helvetica is used for Western characters; if a name has other characters (e.g. Cyrillic), Arial (or DejaVu/Liberation as fallback) is embedded.
+4. `pypdf` merges the pages. After all pages are in place (so the total page count is known) `reportlab` draws one header overlay per stamped page, which is merged onto the page top. Helvetica is used for Western characters; if a name or the extra field has other characters (e.g. Cyrillic), Arial (or DejaVu/Liberation as fallback) is embedded.
 5. Bookmarks and the final PDF are written; temp files are removed.
 
 ## Known limitations
 
-- Word conversion is untested (see the notice at the top).
+- Word conversion, the window and the `.exe` build are untested by the AI (see the notice at the top).
 - Documents are not rescaled: a Letter-size document stays Letter-size (blank/padding pages are A4).
 - The header can cover document text at the very top of the page (by design).
-- Only the newest file per student is used; there is no manual override.
+- No manual override of which file is used (only newest, or all).
 - Empty folders only show up if the zip contains explicit folder entries; some zip tools drop empty folders.
 - A Word document that hangs or shows an unexpected dialog can stall the run (there is no timeout).
 - Memory use grows with the size of all submissions (pypdf keeps the output in memory); fine for ~50–200 students with normal documents.
-- Arabic, CJK and other scripts not covered by Arial are not guaranteed to render in the header.
+- Arabic, CJK and other scripts not covered by Arial are not guaranteed to render in the header or extra field.
+- The extra field is the same text for every student (it is meant for something to write by hand, such as a score).
 
 ## License
 
@@ -92,7 +113,7 @@ No license has been chosen yet. Add one before publishing if you want others to 
 
 # Appendix: the complete chat session
 
-Below is the full conversation in which this project was specified and built, in order. Tool calls (memory notes, file creation, test runs) are not reproduced, only the messages exchanged. Only the user's messages and Claude's replies are included.
+Below is the full conversation in which this project was specified and built, in order. Tool calls (memory notes, file creation, test runs) are not reproduced, only the messages exchanged. Only the user's messages and Claude's replies are included. The text of the last turn is the final reply as sent, which was written before this README was saved.
 
 ## Turn 1: User
 
@@ -253,4 +274,71 @@ Below is the full conversation in which this project was specified and built, in
 
 ## Turn 4: Claude
 
-> This README.md, with the vibe-coded notice at the top and this chat session as the appendix.
+> `README.md` is ready, and it opens with a warning that the project is vibe-coded and that the Word conversion, the window and the `.exe` build were never tested.
+>
+> It also covers features, requirements, usage, how to build the `.exe`, how the program works, known limitations and a note that no license is chosen yet. Add a license before publishing if you want others to reuse the code.
+>
+> The appendix has the full conversation: your four messages, plus my replies to the first three. I left out the tool calls (file creation, test runs) and the memory notes, and said so in the appendix intro. My reply to this last request is only a placeholder sentence, since the README itself is that reply.
+>
+> I didn't reconstruct the earlier replies from a stored log. I copied them from the conversation, including your typo "weirdd" in message 2. Read the appendix once before you publish it, because it contains your original assignment text.
+
+## Turn 5: User
+
+> Program seems to be hanging after first submission? Or is it just slow (minute now)
+
+## Turn 5: Claude
+
+> Probably a hang, not slowness: Word takes seconds per document, not a minute. The likeliest cause is Word waiting on a hidden dialog (for example an "open and repair" prompt, a link-update question or a first-run notice), because I start Word invisibly. I'm adding a timeout that kills a stuck Word and moves on, a log line showing which file is being converted, and a "show Word" checkbox so you can see any dialog.
+
+## Turn 6: User
+
+> No it is fine, it just started. Seems like the first doc took a long time.
+
+## Turn 6: Claude
+
+> Good. The slow first document is most likely Word starting up in the background, since the program launches its own invisible Word instance. Later documents should go much faster.
+>
+> My last message said I was adding a timeout and a "show Word" option, but I hadn't made any changes. The program is unchanged from the version I delivered. If a run does hang on some file later, I can add those safeguards, plus a log line naming the file being converted.
+>
+> Once it finishes, check the PDF's first pages for the header and bookmarks, and compare one Word document against its converted version. I could only test the Word conversion on your machine.
+
+## Turn 7: User
+
+> OK, output looks good! Few modifications please:
+>
+> * First page with header, put a border around the header. This way it is easy to identify if a new submission begins. Add a page number in the header so you can keep track easily. Preferrably in this format: 1 / 4 first number is page number, last number is total number of pages.
+> * Add an option to make it headerless.
+> * Add an option to add a custom field to the header. I.E. for putting in the score, something small, if it is too big, just "chop it off" as they say in Dutch.
+> * In the progress bar: put an indication that it is starting word and to wait a while. (In Dutch of course)
+> * Any way of detecting the language of the user? Add an English version next to the Dutch version. No info? Use English (nice to have)
+> * Add an option to process all submissions. So if a student submitted more, they all appear behind eachother. For the recto verso mode: keep it, so each file appears on an odd page.
+>
+> and finally, update the readme.md.
+> Thanks!
+
+## Turn 7: Claude
+
+*(Claude backed up the previous version, rewrote the program, tested it with a fake Word converter across the option combinations, inspected the stamped headers, and updated the README and instructions. A short status message was sent while it was working.)*
+
+> Status: the new header features pass my tests (borders, page numbers, custom field, languages). I'm now installing the new version into the output folder and updating the README and instructions.
+
+*(Final message of that turn:)*
+
+> All six changes are in, plus the README update. I tested everything with a fake Word converter on Linux. The real Word step, the window and the `.exe` build I still can't run, so please try one real zip.
+>
+> **What changed**
+> - **Border and page number:** the first page of each submission now has a border around the header. The page number comes after the other fields, formatted `1 / 4`.
+> - **Headerless option:** one checkbox removes the header completely, and the other header options are greyed out.
+> - **Custom field:** a text box adds your text at the end of the header (for example `Score: ____ / 20`) and cuts it off when it doesn't fit.
+> - **Progress bar:** while Word starts, the bar moves back and forth with "Word wordt gestart... even geduld, dit kan tot een minuut duren." It stays until the first document is converted.
+> - **Language:** the program uses Dutch if the Windows display language or region is Dutch, and English otherwise. A dropdown switches the window and the header texts. The bold text becomes "Multiple documents submitted" in English.
+> - **All submissions:** a checkbox puts every file of a student after each other, oldest first. In duplex mode each file starts on an odd page.
+>
+> **Choices I made that you can change**
+> - Page numbers are "per submission" by default. A dropdown also offers "whole PDF" (blank padding pages count) or "none".
+> - In "all submissions" mode the header shows `File 2/3` and the bookmarks list each file.
+> - In headerless mode, empty folders still get a blank page and a bookmark, but nothing on the page identifies the student.
+> - Files that aren't Word or PDF are skipped and listed in the log.
+> - The custom field has the same text for every student. If you want a different value per student, that would need a list as input.
+>
+> Files are in `/mnt/user-data/outputs/inzendingen-samenvoegen/`.

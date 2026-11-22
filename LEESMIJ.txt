@@ -1,16 +1,22 @@
-INZENDINGEN SAMENVOEGEN TOT PDF
-===============================
-Gebruik (collega's):
- 1. Dubbelklik op InzendingenSamenvoegen.exe
+INZENDINGEN SAMENVOEGEN TOT PDF  /  MERGE STUDENT SUBMISSIONS INTO ONE PDF
+=========================================================================
+Gebruik / Usage:
+ 1. Dubbelklik op InzendingenSamenvoegen.exe  /  Double-click InzendingenSamenvoegen.exe
  2. Kies het zipbestand, kies Word of PDF, vink de opties aan, klik "PDF maken".
- 3. Kies waar de PDF bewaard wordt.
+    Choose the zip, choose Word or PDF, tick the options, click "Create PDF".
+ 3. Kies waar de PDF bewaard wordt.  /  Choose where to save the PDF.
 
-Vereisten: Windows. Voor Word-inzendingen (doc, docx, odt) moet Microsoft Word
+De taal (Nederlands of English) wordt automatisch herkend en kan bovenaan gewijzigd worden.
+The language (Dutch or English) is detected automatically and can be changed at the top.
+
+Vereisten / Requirements: Windows. Voor Word-inzendingen (doc, docx, odt) moet Microsoft Word
 geinstalleerd zijn (Word zet de documenten om, dus de opmaak is identiek aan Word).
-PDF-modus heeft geen Word nodig.
+PDF-modus heeft geen Word nodig.  /  PDF mode does not need Word.
+Bij de start van Word kan het even duren (tot een minuut): even geduld.
 
 Privacy: alles gebeurt lokaal. Er is geen internetverbinding nodig en er wordt
 niets verstuurd. Tijdelijke bestanden worden na afloop gewist.
+Everything runs locally; nothing is sent anywhere.
 
 Windows SmartScreen kan bij het eerste gebruik "onbekende uitgever" tonen:
 kies "Meer info" en daarna "Toch uitvoeren". (IT kan het exe-bestand goedkeuren.)

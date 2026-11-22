@@ -11,7 +11,7 @@ ENV/
 ECHO is off.
 # Distribution
 build/
-dist/
+#dist/
 *.egg-info/
 ECHO is off.
 # IDE
