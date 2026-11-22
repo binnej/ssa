@@ -1,0 +1,19 @@
+INZENDINGEN SAMENVOEGEN TOT PDF
+===============================
+Gebruik (collega's):
+ 1. Dubbelklik op InzendingenSamenvoegen.exe
+ 2. Kies het zipbestand, kies Word of PDF, vink de opties aan, klik "PDF maken".
+ 3. Kies waar de PDF bewaard wordt.
+
+Vereisten: Windows. Voor Word-inzendingen (doc, docx, odt) moet Microsoft Word
+geinstalleerd zijn (Word zet de documenten om, dus de opmaak is identiek aan Word).
+PDF-modus heeft geen Word nodig.
+
+Privacy: alles gebeurt lokaal. Er is geen internetverbinding nodig en er wordt
+niets verstuurd. Tijdelijke bestanden worden na afloop gewist.
+
+Windows SmartScreen kan bij het eerste gebruik "onbekende uitgever" tonen:
+kies "Meer info" en daarna "Toch uitvoeren". (IT kan het exe-bestand goedkeuren.)
+
+Het exe-bestand maken (eenmalig, door 1 persoon): zie build_exe.bat.
+Zonder exe: python inzendingen_samenvoegen.py (vereist pypdf, reportlab, pywin32).

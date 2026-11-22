@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+ECHO is off.
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+ECHO is off.
+# Distribution
+build/
+dist/
+*.egg-info/
+ECHO is off.
+# IDE
+.vscode/
+.idea/
+ECHO is off.
+# Jupyter
+.ipynb_checkpoints/
+ECHO is off.
+# Pytest
+.pytest_cache/
+ECHO is off.
+# Coverage
+.coverage
+htmlcov/
+ECHO is off.
+# OS
+Thumbs.db
+.DS_Store
+ECHO is off.
+# Secrets
+.env
+*.key
+*.pem
