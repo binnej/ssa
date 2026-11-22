@@ -4,7 +4,7 @@
 > This program was written entirely by an AI assistant (Claude) in a single chat session, directed by a non-programmer's requirements and **not reviewed line by line by a human**. The complete conversation is included in the [appendix](#appendix-the-complete-chat-session).
 >
 > **What was tested (by the AI, on Linux, with synthetic zips and a fake converter):** zip scanning, class/no-class detection, file selection, header stamping (border, page numbers, custom field, chopping), recto-verso padding, blank header pages, bookmarks, the Dutch/English texts.
-> **What the AI could not test:** the real Microsoft Word conversion, the Tkinter window and the PyInstaller `.exe` build. The author reports that a first real run produced good output ("output looks good"), but the later changes (borders, page numbers, custom field, language, all-submissions mode, headerless mode, start-up message) have **not** been run in the real window by the AI.
+> **What the AI could not test:** the real Microsoft Word conversion, the Tkinter window and the PyInstaller `.exe` build. The author reports that a first real run produced good output ("output looks good"), but the later changes (borders, page numbers, custom field, language, all-submissions mode, headerless mode, start-up message, full-width border, right-aligned page number) have **not** been run in the real window by the AI.
 > **Please try it on a small real zip before relying on it.** Student work is involved, so check the output page by page the first time. Use at your own risk.
 
 Merge a zip of student submissions into **one PDF**, with a small header on each submission (student name, class, number of files submitted, page number, optional custom field). Everything runs locally; nothing is uploaded anywhere (GDPR-friendly).
@@ -19,13 +19,14 @@ The window and header texts are available in **Dutch and English**. The language
 - Takes the **most recent file** per student, by the timestamp stored in the zip, or **all submissions** of each student (option), oldest first, one after the other.
 - **Word mode:** `.doc`, `.docx`, `.docm`, `.odt`, `.rtf` are converted to PDF by your locally installed **Microsoft Word**, so the layout is what Word shows.
 - **PDF mode:** student PDFs are used as they are (no Word needed).
-- **Header** (9 pt, one line at the top edge of the page, drawn over the document with a white box around the text; the page is not shrunk):
+- **Header** (9 pt, one line at the top of the page, 6 mm from the edges so it stays inside normal printer margins, drawn over the document with a white background; the page is not shrunk):
   - `Name: …  |  Class: …  |  Submissions: N`
   - If N > 1, the count and **Meerdere documenten ingediend** / **Multiple documents submitted** are printed in bold.
   - In "all submissions" mode the header also shows `File 2/3`.
-  - A **border** is drawn around the header on the first page of each submission (easy to see where a new submission starts).
-  - **Page number** `1 / 4`: per submission (default), in the whole PDF, or none.
-  - **Extra field**: any text you type (for example `Score: ____ / 20`) is added at the end of the header; if it does not fit it is chopped off.
+  - The header is a **bordered box over the full page width** on every page that has a header.
+  - **Page number** `1 / 4`, **right-aligned**: per submission (default), in the whole PDF, or none.
+  - **Extra field**: any text you type (for example `Score: ____ / 20`) is added after the other fields; if it does not fit (before the page number) it is chopped off.
+  - The header texts follow the selected language (Dutch or English).
   - Header on every page (default) or only on the first page of each submission.
   - Or **no header at all** (option).
 - **Recto-verso option:** every submission (every file, in "all submissions" mode) starts on an odd page; a white page is inserted when needed.
@@ -74,7 +75,7 @@ python inzendingen_samenvoegen.py
 | Include all submissions | All suitable files of a student, oldest first (otherwise only the newest) |
 | No header at all | No header, border, page number or extra field. Empty-folder pages are then plain blank pages (bookmarks still identify them) |
 | Header on every page | Otherwise only on the first page of each submission |
-| Page number in header | Per submission (`1 / 4`), in the whole PDF (blank padding pages count), or none |
+| Page number in header | Per submission, in the whole PDF (blank padding pages count), or none; shown as `1 / 4`, right-aligned |
 | Extra field in header | Free text at the end of the header, chopped off when too long |
 
 ## Files
@@ -342,3 +343,37 @@ Below is the full conversation in which this project was specified and built, in
 > - The custom field has the same text for every student. If you want a different value per student, that would need a list as input.
 >
 > Files are in `/mnt/user-data/outputs/inzendingen-samenvoegen/`.
+
+## Turn 8: User
+
+> Claude,
+>
+> * can you make the header-border over the entire page width (include printer margins of course).
+> * If I select English, does the header text also switch to english (Must)
+> * Can you right align the page numbering?
+> * In the GUI, the text in the combobox is confusing: (1 / 4) I would remove that and just keep the text. That is fine.
+>
+> looks like this is the final edit.
+
+## Turn 8: Claude
+
+*(Claude changed the header layout, reran its tests with a fake Word converter in both languages, inspected the rendered headers, and updated the README.)*
+
+> All four are done and tested the same way as before: with a fake Word converter on Linux. The real Word step, the window and the `.exe` are still untested by me, so rebuild the `.exe` with `build_exe.bat` and try one real zip.
+>
+> - **Full-width border:** on the first page of each submission the header is now one bordered box across the page, kept 6 mm from the edges so normal printer margins don't clip it.
+> - **English header:** yes. The header texts follow the selected language: "Name / Class / Submissions", and in bold "Multiple documents submitted" instead of the Dutch text. I checked the rendered output in both languages.
+> - **Right-aligned page number:** `1 / 4` now sits at the right end of the header. The extra field is chopped off before it would reach the page number.
+> - **Combobox text:** it now says just "per inzending" / "per submission" (and "in de hele PDF", "geen" in Dutch).
+>
+> Other pages of a submission (when the header is on every page) get the same text without a border, with the white background only behind the text and the page number. Updated files: `inzendingen_samenvoegen.py` and `README.md`.
+
+## Turn 9: User
+
+> Other pages of a submission (when the header is on every page) get the same text without a border. The white background sits only behind the text and the page number.
+>
+> The intent was to do the border on every page. Looks cleaner.
+
+## Turn 9: Claude
+
+> Understood, I misread that. Every page with a header now gets the full-width bordered box, not only the first page of a submission. Updated `inzendingen_samenvoegen.py` and the README. Same caveat as before: tested with a fake Word converter, so rebuild the `.exe` and check one real zip.

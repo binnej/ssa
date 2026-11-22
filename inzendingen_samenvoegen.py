@@ -76,7 +76,7 @@ STR = {
         "noheader": "Geen koptekst (hoofding) toevoegen",
         "hdrall": "Koptekst op elke pagina (anders enkel op de eerste pagina)",
         "pagenum": "Paginanummer in koptekst:",
-        "pn_sub": "per inzending (1 / 4)", "pn_all": "in de hele PDF", "pn_none": "geen",
+        "pn_sub": "per inzending", "pn_all": "in de hele PDF", "pn_none": "geen",
         "custom": "Extra veld in koptekst:",
         "custom_hint": "Bv. Score: ____ / 20  (wordt afgekapt als het niet past)",
         "step3": "3. PDF maken", "make": "PDF maken", "cancel": "Annuleren", "open": "PDF openen",
@@ -127,7 +127,7 @@ STR = {
         "noheader": "No header at all",
         "hdrall": "Header on every page (otherwise only on the first page)",
         "pagenum": "Page number in header:",
-        "pn_sub": "per submission (1 / 4)", "pn_all": "in the whole PDF", "pn_none": "none",
+        "pn_sub": "per submission", "pn_all": "in the whole PDF", "pn_none": "none",
         "custom": "Extra field in header:",
         "custom_hint": "E.g. Score: ____ / 20  (chopped off if it does not fit)",
         "step3": "3. Create the PDF", "make": "Create PDF", "cancel": "Cancel", "open": "Open PDF",
@@ -185,8 +185,7 @@ PDF_EXT = {".pdf"}
 JUNK_FILES = {".ds_store", "thumbs.db", "desktop.ini"}
 
 HEADER_FONT_SIZE = 9.0      # pt (smaller for very long names)
-HEADER_TOP = 5 * MM         # distance from top edge of page to top of header box
-HEADER_LEFT = 8 * MM
+HEADER_MARGIN = 6 * MM      # distance from the page edges to the header box (printer margins)
 HEADER_SEP = "   |   "
 
 
@@ -376,7 +375,10 @@ def header_segments(student, n_files, file_no=None, file_total=1, extra=None):
     return segs
 
 
-def make_overlay(w, h, segments, custom, fonts, border):
+def make_overlay(w, h, segments, custom, pagenum, fonts, border):
+    """border=True: one bordered box over the full page width (used on every page with a header).
+    border=False: small white boxes only behind the text and the page number.
+    The page number is right-aligned; the custom field is chopped off if it does not fit."""
     reg, bold = fonts
     if reg == "Helvetica":  # Helvetica only knows cp1252
         segments = [(t.encode("cp1252", "replace").decode("cp1252"), b) for t, b in segments]
@@ -385,15 +387,22 @@ def make_overlay(w, h, segments, custom, fonts, border):
     def width(segs, sz):
         return sum(pdfmetrics.stringWidth(t, bold if b else reg, sz) for t, b in segs)
 
+    pad = 1.5 * MM
+    gap = 4 * MM
+    x_left = HEADER_MARGIN + pad
+    x_right = w - HEADER_MARGIN - pad
+    inner = x_right - x_left
+
+    def pn_space(sz):
+        return pdfmetrics.stringWidth(pagenum, reg, sz) + gap if pagenum else 0
+
     size = HEADER_FONT_SIZE
-    maxw = w - 2 * HEADER_LEFT
-    while width(segments, size) > maxw and size > 5:
+    while width(segments, size) + pn_space(size) > inner and size > 5:
         size -= 0.25
 
-    # custom field: appended at the end and chopped off if it does not fit
     segs = list(segments)
     if custom:
-        remaining = maxw - width(segments, size)
+        remaining = inner - width(segments, size) - pn_space(size)
         txt = HEADER_SEP + custom
         while txt and pdfmetrics.stringWidth(txt, reg, size) > remaining:
             txt = txt[:-1]
@@ -401,30 +410,38 @@ def make_overlay(w, h, segments, custom, fonts, border):
             segs.append((txt, False))
 
     tw = width(segs, size)
-    pad = 1.5 * MM
+    pnw = pdfmetrics.stringWidth(pagenum, reg, size) if pagenum else 0
     band_h = size + 2 * pad
-    top = h - HEADER_TOP
+    top = h - HEADER_MARGIN
+    y = top - pad - size * 0.8
 
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=(w, h))
-    c.setFillColorRGB(1, 1, 1)      # white background, only around the text
+    c.setFillColorRGB(1, 1, 1)
     c.setStrokeColorRGB(0, 0, 0)
     c.setLineWidth(0.9)
-    c.rect(HEADER_LEFT - pad, top - band_h, tw + 2 * pad, band_h,
-           stroke=1 if border else 0, fill=1)
+    if border:
+        c.rect(HEADER_MARGIN, top - band_h, w - 2 * HEADER_MARGIN, band_h, stroke=1, fill=1)
+    else:
+        c.rect(x_left - pad, top - band_h, tw + 2 * pad, band_h, stroke=0, fill=1)
+        if pagenum:
+            c.rect(x_right - pnw - pad, top - band_h, pnw + 2 * pad, band_h, stroke=0, fill=1)
     c.setFillColorRGB(0, 0, 0)
-    x, y = HEADER_LEFT, top - pad - size * 0.8
+    x = x_left
     for text, b in segs:
         font = bold if b else reg
         c.setFont(font, size)
         c.drawString(x, y, text)
         x += pdfmetrics.stringWidth(text, font, size)
+    if pagenum:
+        c.setFont(reg, size)
+        c.drawRightString(x_right, y, pagenum)
     c.save()
     buf.seek(0)
     return PdfReader(buf).pages[0]
 
 
-def stamp_page(page, segments, custom, fonts, border):
+def stamp_page(page, segments, custom, pagenum, fonts, border):
     try:
         if getattr(page, "rotation", 0) % 360:
             page.transfer_rotation_to_content()
@@ -433,7 +450,7 @@ def stamp_page(page, segments, custom, fonts, border):
     box = page.cropbox
     left, bottom = float(box.left), float(box.bottom)
     w, h = float(box.width), float(box.height)
-    ov = make_overlay(w, h, segments, custom, fonts, border)
+    ov = make_overlay(w, h, segments, custom, pagenum, fonts, border)
     page.merge_transformed_page(ov, Transformation().translate(left, bottom))
 
 
@@ -443,12 +460,13 @@ def stamp_all(writer, jobs, opts):
     custom = (opts.get("custom_text") or "").strip()
     mode = opts.get("page_numbers", "sub")
     for idx, segs, is_first, li, lt in jobs:
-        s = list(segs)
+        pn = ""
         if mode == "sub":
-            s.append((HEADER_SEP + "%d / %d" % (li, lt), False))
+            pn = "%d / %d" % (li, lt)
         elif mode == "all":
-            s.append((HEADER_SEP + "%d / %d" % (idx + 1, total), False))
-        stamp_page(writer.pages[idx], s, custom, pick_fonts(s, custom), border=is_first)
+            pn = "%d / %d" % (idx + 1, total)
+        fonts = pick_fonts(segs, custom + pn)
+        stamp_page(writer.pages[idx], segs, custom, pn, fonts, border=True)
 
 
 # --------------------------------------------------------------------------
